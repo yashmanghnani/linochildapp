@@ -1,7 +1,43 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously
 
-class HomePageWidget extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:lino/src/controller/AiCallController.dart';
+import 'package:lino/src/view/widgets/app_Audio_Service.dart';
+import 'package:state_extended/state_extended.dart';
+
+class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
+
+  @override
+  StateX<HomePageWidget> createState() => _HomePageWidgetState();
+}
+
+class _HomePageWidgetState extends StateX<HomePageWidget> {
+  late Aicallcontroller con;
+
+  _HomePageWidgetState()
+    : super(
+        controller: Aicallcontroller(),
+        useInherited: true,
+        debugPrintEvents: true,
+      ) {
+    con = controller as Aicallcontroller;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused) {
+      // App minimized / backgrounded
+      debugPrint("App paused → stop AI & audio");
+      con.shutdownAI(); // stop speech, audio, socket
+    } else if (state == AppLifecycleState.resumed) {
+      AppAudioService().startBackgroundSound(); 
+      // App back to foreground
+      debugPrint("App resumed → user can tap Play Now to start fresh");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,8 +120,9 @@ class HomePageWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       elevation: 10,
                       child: InkWell(
-                        onTap: () {
+                        onTap: () async {
                           if (index == 0) {
+                            await con.startDirectAICall("user2");
                             Navigator.pushNamed(context, "/letsTalk");
                           }
                         },
